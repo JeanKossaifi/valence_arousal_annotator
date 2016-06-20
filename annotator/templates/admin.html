@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <h1>Admin -- {{session.name}}</h1>
+    <br/>
+
+    Existing users: <br/> <br/>
+    <ul>
+    {%  for user in users %}
+        <li>{{ user.name }}
+            {%  if user.permission =='admin' %} (administrator)
+            {% endif %}
+            <a href="{{ url_for('delete_user', username=user.name)}}"> delete </a></li>
+    {% endfor %}
+    </ul>
+
+
+{% endblock %}

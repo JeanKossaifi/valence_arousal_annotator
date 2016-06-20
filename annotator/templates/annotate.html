@@ -1,0 +1,388 @@
+{% extends "layout.html" %}
+
+
+{% block body %}
+<script type=text/javascript>
+    var index = 0;
+    var vec = {{ img_names|tojson }}; // array of all the paths to the images
+    var valence = {{ valence|tojson }}; // array of corresponding valence..
+    var arousal = {{ arousal|tojson }}; // and arousal
+    var state = {{ state|tojson }}; // is it 'todo', to 'check' or 'done' ?
+    var emotion = {{emotion|tojson}};
+    var size = vec.length; // number of images to annotate
+    var username = {{username|tojson}};
+    var video_id = {{video_id|tojson}};
+    var current_valence = valence[0];
+    var current_arousal = arousal[0];
+    var current_set = 0; //valence or arousal
+    var annotating = 0; //frame being annotated
+    var all_annotated = 0; // 1 once everything has been annotated
+
+    // Set the focus and different elements depending on annotation progress
+    function set_focus() {
+        if (all_annotated == 0)
+        {
+            if (annotating == 0) {
+                document.getElementById('annotations').focus();
+            }
+            if (annotating == 1 && current_set == 0) {
+                document.getElementById('valence').focus();
+            }
+            if (annotating == 1 && current_set == 1) {
+                document.getElementById('arousal').focus();
+            }
+        }
+        else {
+            document.getElementById('done').focus();
+        }
+    }
+
+    // init the values of valence and arousal
+    function set_valence(current_valence) {
+        document.getElementById('valence_value').value = current_valence;
+        document.getElementById('valence').value = current_valence;
+    }
+    function set_arousal(current_arousal) {
+        document.getElementById('arousal_value').value = current_arousal;
+        document.getElementById('arousal').value = current_arousal;
+    }
+
+    // Set the values of valence and arousal
+    function init_values() {
+        // Set valence
+        if (valence[index] != null) {
+            current_valence = valence[index];
+        } else {
+            if (index>0 && valence[index - 1] != null) {
+                current_valence = valence[index - 1];
+            } else{
+                current_valence = 0;
+            }
+        }
+        set_valence(current_valence);
+        // Set arousal
+        if (arousal[index] != null) {
+            current_arousal = arousal[index];
+        } else {
+            if (index>0 && arousal[index - 1] != null) {
+                current_arousal = arousal[index - 1];
+            } else{
+                current_arousal = 0;
+            }
+        }
+        set_arousal(current_arousal);
+
+        // Update the current frame number displayed
+        document.getElementById('current_frame').innerHTML = '-- Frame '+(index+1)+'/'+size+'--';
+        if (annotating==1 && current_set==0) {
+            document.getElementById('current_frame').innerHTML = '-- Frame '+(index+1)+'/'+size+'-- annotating VALENCE';
+        }
+        if (annotating==1 && current_set==1) {
+            document.getElementById('current_frame').innerHTML = '-- Frame '+(index+1)+'/'+size+'-- annotating AROUSAL';
+        }
+
+    }
+
+    // Update the currently displayed image
+    function update_image() {
+        // Updating the image displayed
+         document.getElementById('Frame').src = vec[index];
+        // Update the values in the fields
+        init_values()
+    }
+
+    // increment index if possible, otherwise displays a message and rewinds
+    function next_frame()
+    {
+        if (index+1 < size) {
+            index +=  1;
+        } else {
+            index = 0;
+            alert('Reached the last frame, rewinding!');
+        }
+        update_image();
+    }
+    function previous_frame()
+    {
+        if (index > 0) {
+            index -=  1;
+        } else {
+            index = size - 1;
+            alert('Reached the first frame, going to the end!');
+        }
+        update_image();
+    }
+
+
+    // Next video
+    function next_video() {
+        var comment = document.getElementById("comment_value").value;
+        if (comment == '') {
+            comment = 'none';
+        }
+        // Save the values
+        var request = new XMLHttpRequest();
+        var data = JSON.stringify({
+            "comment": JSON.stringify(comment),
+            "state":JSON.stringify(state),
+            "valence": JSON.stringify(valence),
+            "arousal": JSON.stringify(arousal),
+            "emotion": emotion});
+        request.open("POST", $SCRIPT_ROOT + "/_save_annotations", true);
+        request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+        request.send(data);
+        window.location = '{{request.path}}';
+
+    }
+
+    // Save the annotation with the correct label
+    function submit_annotations(save_state) {
+        state = save_state;
+        next_video();
+    }
+
+    // Reset the annotions for valence and/or arousal
+    function reset_values() {
+        for (i = 0; i < size; i++) {
+            arousal[i] = null;
+            valence[i] = null;
+        }
+        init_values();
+    }
+    function reset_valence() {
+        for (i = 0; i < size; i++) {
+            valence[i] = null;
+        }
+        init_values();
+    }
+    function reset_arousal() {
+        for (i = 0; i < size; i++) {
+            arousal[i] = null;
+        }
+        init_values();
+    }
+
+    // Check that all frames have an annotated value for both valence and arousal
+    function check_annotations() {
+        var arousal_to_fill = [];
+        var valence_to_fill = [];
+        for (i = 0; i < size; i++) {
+            if (arousal[i]==null){ arousal_to_fill.push(i+1); }
+                    if (valence[i] == null) { valence_to_fill.push(i+1);}
+        }
+        if (arousal_to_fill.length > 0 || valence_to_fill.length > 0) {
+            var message = confirm( "You did not fill frames " + arousal_to_fill + ' for arousal and frames ' + valence_to_fill + ' for valence.\n\n Save anyway?');
+            return message;
+        }
+        return 1;
+    }
+
+
+    // Annotate the whole video for first valence then arousal then submit
+    function continuous_annotate() {
+        // Update display
+        if (current_set == 0) {
+            document.getElementById('current_frame').innerHTML = '-- Frame '+(index+1)+'/'+size+'--, annotating VALENCE';
+        }
+        if (current_set == 1) {
+            document.getElementById('current_frame').innerHTML = '-- Frame '+(index+1)+'/'+size+'--, annotating AROUSAL';
+        }
+
+        // If not annotating just start annotating and return
+        if (annotating == 0) {
+            all_annotated = 0;
+            annotating = 1;
+            index = 0;
+            set_focus();
+            return;
+        }
+
+        // If annotating valence save the value
+        if (current_set == 0) {
+            valence[index] = parseInt(document.getElementById('valence').value);
+        }
+        else { // save arousal value
+            arousal[index] = parseInt(document.getElementById('arousal').value);
+        }
+
+        // Update index (ie go to next frame)
+        if (index+1 < size) { // there are still frames to annotate
+            index += 1;
+            update_image();
+        }
+        else {
+            if (current_set == 0) {// Start annotating the next set (arousal)
+                current_set = 1;
+                index = 0;
+                update_image();
+                alert('Start annotating arousal');
+            }
+            else {
+                annotating = 0;
+                current_set = 0;
+                alert('Whole video annotated!');
+                document.getElementById('current_frame').innerHTML = '-- Frame '+(index+1)+'/'+size+'--, DONE (all the video has been annotated)';
+                all_annotated = 1;
+            }
+        }
+
+        // Set the focus to the correct element
+        set_focus();
+    }
+
+    window.onload = function(){
+
+         // Save current annotations
+        var save_button = document.getElementById("save");
+        save_button.addEventListener("click",function(e){
+            // Save the values
+            valence[index] = document.getElementById("valence").value;
+            arousal[index] = document.getElementById("arousal").value;
+            next_frame();
+        }, false);
+
+        // Annotations button
+        document.getElementById("annotations").onclick = continuous_annotate;
+
+        // Keybindings
+        document.body.onkeydown = function(e) {
+            current_valence = parseInt(document.getElementById('valence').value);
+            current_arousal = parseInt(document.getElementById('arousal').value);
+            switch(e.which) {
+                case 37: // left
+                    if (index > 0) { previous_frame(); }
+                    break;
+
+                case 38: // up
+                    if (current_set == 0 && current_valence<10) {
+                        current_valence += 1;
+                        set_valence(current_valence);
+                    }
+                    else if (current_set == 1 && current_arousal<10) {
+                        current_arousal += 1;
+                        set_arousal(current_arousal);
+                    }
+                    break;
+
+                case 39: // right
+                    if (annotating == 0) { next_frame(); }
+                    else { continuous_annotate();}
+                    break;
+
+                case 27: // Escape
+                    document.getElementById('comment_value').focus();
+                    break;
+
+
+                case 18: // alt
+                    if (annotating == 0) { next_frame(); }
+                    else { continuous_annotate();}
+                    break;
+
+                case 40: // down
+                    if (current_set == 0 && current_valence>-10) {
+                        current_valence -= 1;
+                        set_valence(current_valence);
+                    }
+                    if (current_set == 1 && current_arousal>-10) {
+                        current_arousal -= 1;
+                        set_arousal(current_arousal);
+                    }
+                    break;
+
+                case 17: // 16 = shift, 17 = ctrl
+                    continuous_annotate();
+                    break;
+
+                default:
+                    return; // exit this handler for other keys
+            }
+            e.preventDefault(); // prevent the default action (scroll / move caret)
+        };
+
+        // Set the current values of the slider and the focus
+        init_values();
+        set_focus();
+    };
+</script>
+
+    <div class="wrap">
+
+        <div class="title">
+            <div class="title-left"> Annotating video {{ video_id }}</div>
+            <div class="title-right"> [emotion={{emotion}}] &nbsp; [state={{state}}]</div>
+        </div>
+
+
+        <div class="frame">
+            <img class="frame_img" src={{ img_names[0] }} alt="Frame" id="Frame">
+            <div class="bottom">
+                <button href=# id="previous_frame" onclick="previous_frame()">Previous frame</button> &nbsp
+                <div class='frame_number' id='current_frame'> First frame. Not annotating. </div> &nbsp
+                <button href=# id="next_frame" onclick="next_frame()">Next frame</button>
+            </div>
+        </div>
+
+
+        <div class="interface">
+
+            <br/>
+            <label for="valence">Valence:</label>
+            <input name="valence" id="valence" type="range" min="-10" max="10" step="1" value={{valence[0]}} onchange="valence_value.value=value"/>
+            <input id="valence_value" type="number" size="1" min="-10" max="10" step="1" onclick="document.getElementById('valence').value=this.value"/>
+
+            <br/>
+            <label for="arousal">Arousal:</label>
+            <input name="arousal" id="arousal" type="range" min="-10" max="10" step="1" value ={{arousal[0]}} onchange="arousal_value.value=value"/>
+            <input id="arousal_value" type="number" size="1" min="-10" max="10" step="1" onclick="document.getElementById('arousal').value=this.value"/>
+            <br/>
+
+
+            <br/>
+            <div style="text-align:center;">
+                <button class="pair" href=# id="save">save current values</button>
+                <button class="pair" href="#" id="annotations">annotate all frames</button>
+            </div>
+
+            <label for="comment_value">Comments:</label>
+            <textarea name="comment_value" id="comment_value" type="text_area"
+                    {% if comment in [none, 'none'] %} placeholder="Add_comment" {% endif %}
+            >{% if comment not in [none, 'none'] %}{{comment}}{%  endif %}</textarea>
+
+            <div style="text-align:center;">
+                <button class='submit' id="todo" onclick='submit_annotations("todo")' >save as 'to-do' </button>
+                <button class='submit' id="check" onclick='submit_annotations("check")'>save as 'check'</button>
+                <button class='submit' id="done" onclick='submit_annotations("done")'  >save as 'done' </button>
+            </div>
+
+            <button class="check" id="check_values_annotated" onclick='check_annotations()'> Check for unannotated frames</button>
+            <button class=reset href=# id='reset_values' onclick='reset_values(this)'> Reset values of valence and arousal </button>
+            <button class=reset href=# id='reset_valence' onclick='reset_valence()'> Reset values of just valence</button>
+            <button class=reset href=# id='reset_arousal' onclick='reset_arousal()'> Reset values of just arousal </button>
+
+        </div>
+    </div>
+    <br/>
+
+
+
+    <div id="help_modal" class="modalDialog" onclick="document.location.href = '#';">
+        <div>
+            <a href="#close" title="Close" class="close">X</a>
+            <h2>Help</h2>
+            <p>First annotate all frames.</p>
+            <p>Check already annotated frames with the corresponding buttons.</p>
+            <br/>
+
+            <h2>Keyboard shortcuts</h2>
+            <lu>
+                <li> a: annotate all frames (ie enter annotation mode)</li>
+                <li> up: increase valence or arousal </li>
+                <li> down: decrease valence or arousal </li>
+                <li> right: save current annotations and go to next frame </li>
+            </lu>
+        </div>
+    </div>
+
+
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h2>Register a new user</h2>
+<form action="{{ url_for('register') }}" method=post>
+    <dl>
+        <br/>
+        <dt>Username:</dt>
+        <dd><input type=text name=username></dd>
+        <br/>
+        <dt>Password:</dt>
+        <dd><input type=password name=password></dd>
+        <br/>
+        <dt>Give administration rights (if not, new user will be normal user):</dt>
+        <dd><input type="checkbox" name="admin" value="admin">Make admin.</dd>
+        <br/>
+        <dd><input type=submit value='Add user'></dd>
+    </dl>
+</form>
+{% endblock %}

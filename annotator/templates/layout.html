@@ -1,0 +1,86 @@
+<!doctype html>
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.png') }}">
+</head>
+
+<title>Affect annotator</title>
+
+<script type=text/javascript>
+  $SCRIPT_ROOT = {{ request.script_root|tojson }};
+</script>
+
+<nav>
+    <ul id=navbar-list class="navbar-list">
+        {%  if session.logged_in %}
+        <li class="nav nav-hoover" ><a href="{{ url_for('home') }}">HOME</a></li>
+        {%  else %}
+        <li class="nav nav-hoover" ><a href="{{ url_for('login') }}">LOGIN</a></li>
+        {%  endif %}
+
+        <li class="nav nav-hoover" ><a href="#about_modal">ABOUT</a></li>
+
+
+        {%- if request.endpoint == 'annotate' %}
+            <li class="nav nav-hoover" ><a href="#help_modal">HELP</a></li>
+        {% endif %}
+
+        {%  if session.logged_in %}
+        <li class="nav" style="float:right"> Logged in as {{session.name}}
+            <a class="nav-hoover" href="{{ url_for('logout') }}">LOGOUT</a>
+            &nbsp;
+        </li>
+        {% else %}
+        <li class="nav" style="float:right"> Not logged-in </li>
+        {%  endif %}
+    </ul>
+</nav>
+
+
+<div style="padding:20px;margin-top:0px;">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul class=flashes>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block body %}
+    {% endblock %}
+</div>
+
+<div id="about_modal" class="modalDialog">
+    <div>
+        <a href="#close" title="Close" class="close">X</a>
+        <h2>About</h2>
+        <p>This online annotation tool was written for annotating the AFEW-VA dataset for valence and arousal.</p>
+        <br/>
+        <p> It is made publicly available <b>for research purposes only</b>.</p>
+        <br/>
+        <p>Should you use this tool please cite this <em>submitted paper<em>:</p>
+        <cite id="kossaifi">J.Kossaifi, G.Tzimiropoulos, S.Todorovic and M.Pantic. 2016. AFEW-VA for valence and arousal estimation in-the-wild. <em>Image and Vision Computing, Special Issue on Sentiment analysis</em>, submitted.</cite>
+        <br/>
+        Bibtex:
+        <br/>
+        <cite id="kossaifi_bibtex">
+            @article{kossaifi_AFEWVA,<br/>
+            author = {J. Kossaifi and G. Tzimiropoulos and S. Todorovic and M. Pantic},<br/>
+            journal = {Image and Vision Computing},<br/>
+            title = {AFEW-VA for valence and arousal estimation in-the-wild, <em> submitted </em>},<br/>
+            year = {2016},<br/>
+            }
+        </cite>
+        <br/>
+        <p> For questions, please contact jean[dot]kossaifi+annotator[at]gmail[dot]com.</p>
+    </div>
+</div>
+
+<footer>
+    <br/> <br/>
+    <small>© Copyright 2016, Jean Kossaifi</small>
+</footer>
+

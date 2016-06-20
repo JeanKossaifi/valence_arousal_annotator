@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+
+{% block body %}
+    <h1>Home -- {{session.name}}</h1>
+    <br/>
+
+
+    <div class="div-left">
+        <h2> Annotated remaining videos </h2>
+
+        <form action={{url_for('annotate', state='todo')}}>
+            <button class="menu">Annotate videos in state 'to-do' ({{ stats['todo'] }} videos).</button><br/>
+        </form>
+
+        <form action={{url_for('annotate', state='check')}}>
+            <button class="menu">Annotate videos in state 'check' ({{ stats['check'] }} videos).</button><br/>
+        </form>
+
+        <form action={{url_for('annotate', state='done')}}>
+            <button class="menu">Annotate videos in state 'done' ({{ stats['done'] }} videos).</button>
+        </form>
+
+        <br/>
+        You have annotated {{ stats['done'] }}/{{ stats['n_videos'] }} of all videos ({{ stats['not_done'] }} left to annotate).
+
+    </div>
+
+
+    <div class="div-right">
+        <h2> Administration </h2>
+
+        <form action={{url_for('change_password')}}>
+            <button class="menu">Change your password</button>
+        </form>
+
+        {%  if session['permission'] == 'admin' %}
+            <form action={{url_for('register')}}>
+                <button class="menu">Register a new user</button>
+            </form>
+
+            <form action={{url_for('admin')}}>
+                <button class="menu">User administration</button>
+            </form>
+        {%  endif %}
+
+    </div>
+
+{% endblock %}

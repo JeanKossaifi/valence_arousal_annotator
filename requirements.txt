@@ -1,0 +1,7 @@
+Flask
+Flask-Admin
+flask-mongoengine
+Flask-Script
+Flask-WTF
+mongoengine
+pymongo

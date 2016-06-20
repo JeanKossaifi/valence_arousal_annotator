@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block body %}
+  <h1>{{ msg }}</h1>
+
+    <br/><br/>
+    <form style="text-align:center" action={{url_for('home')}}>
+        <button class="menu">Go back to home.</button><br/>
+    </form>
+
+{% endblock %}
