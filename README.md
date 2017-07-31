@@ -8,8 +8,8 @@ Should you use this tool, please cite:
 @article{kossaifi_AFEWVA,
     author = {J. Kossaifi and G. Tzimiropoulos and S. Todorovic and M. Pantic},
     journal = {Image and Vision Computing},
-    title = {AFEW-VA for valence and arousal estimation in-the-wild, submitted},
-    year = {2016},
+    title = {AFEW-VA database for valence and arousal estimation in-the-wild},
+    year = {2017},
 }
 ```
 
