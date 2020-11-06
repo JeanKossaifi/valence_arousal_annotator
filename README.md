@@ -28,7 +28,7 @@ You need MongoDB installed.
 
 Clone the repository:
 ```
-git clone https://github.com/JeanKossaifi/affect_annotation
+git clone https://github.com/JeanKossaifi/valence_arousal_annotator
 cd affect_annotation
 ```
 
